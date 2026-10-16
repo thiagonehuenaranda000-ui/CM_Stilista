@@ -1,0 +1,20 @@
+<!-- 15. BARRA MÓVIL INFERIOR + BOTÓN FLOTANTE WHATSAPP -->
+<!-- Barra fija inferior solo en móvil (oculta en escritorio) -->
+<div class="hidden flex flex-col justify-between fixed bottom-0 left-0 right-0 z-40 h-[80px] bg-surface-container-highest/95 backdrop-blur-xl border-t border-outline-variant/30 md:hidden">
+  <div class="flex justify-around items-center py-2 px-4">
+    <a class="flex flex-col items-center gap-1 w-1/2 bg-primary text-white px-4 py-2.5 rounded-xl text-xs font-label-md font-semibold uppercase tracking-wider min-h-[48px] justify-center" href="{{ wa('Hola Cintia! Quiero pedir un turno por WhatsApp') }}" rel="noopener noreferrer" target="_blank">
+      <span class="material-symbols-outlined text-[20px]">chat</span>
+      <span>Pedí tu turno</span>
+    </a>
+    <a class="flex flex-col items-center gap-1 w-1/2 text-primary hover:bg-primary/10 px-4 py-2.5 rounded-xl text-xs font-label-md font-semibold uppercase tracking-wider min-h-[48px] justify-center" href="https://www.instagram.com/cm_stilista/" rel="noopener noreferrer" target="_blank">
+      <span class="material-symbols-outlined text-[20px]">camera_alt</span>
+      <span>Instagram</span>
+    </a>
+  </div>
+</div>
+
+<!-- Botón flotante de WhatsApp (visible en todos los tamaños) -->
+<a aria-label="WhatsApp CM Stilista" class="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center transition-all duration-300 shadow-[0_12px_32px_rgba(240,45,125,0.45)] hover:scale-110 animate-soft-pulse" href="{{ wa('Hola Cintia! Quiero consultar por un turno en CM Stilista') }}" rel="noopener noreferrer" target="_blank">
+  <span class="material-symbols-outlined text-[30px]">chat</span>
+  <span class="sr-only">Abrir WhatsApp</span>
+</a>

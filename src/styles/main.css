@@ -1,0 +1,110 @@
+/**
+ * src/styles/main.css
+ * Tailwind (compilado) + estilos base y keyframes del diseño.
+ * No se usa el CDN de Tailwind.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Base --- */
+html {
+  scroll-behavior: smooth;
+}
+body {
+  @apply bg-surface font-body-md text-on-surface antialiased selection:bg-primary selection:text-white;
+  overscroll-behavior: none;
+}
+
+/* Barra de scroll restaurada (el prototipo la ocultaba) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #131317;
+}
+::-webkit-scrollbar-thumb {
+  background: #39393d;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5a4046;
+}
+
+/* Utilidad para texto oculto visualmente pero accesible (screen readers) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Keyframes --- */
+@keyframes soft-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(240, 45, 125, 0.4);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 12px rgba(240, 45, 125, 0);
+  }
+}
+
+.animate-soft-pulse {
+  animation: soft-pulse 2.8s infinite;
+}
+
+/* --- Respeta prefers-reduced-motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-soft-pulse {
+    animation: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* --- Foco visible con el magenta de marca --- */
+*:focus-visible {
+  outline: 2px solid #f02d7d;
+  outline-offset: 2px;
+}
+
+/* --- Scroll offset para anclas (compensa el header fijo: ~112px) --- */
+section[id] {
+  scroll-margin-top: 112px;
+}
+
+/* Clases de utilidad reusables que no entran en Tailwind directo */
+.acordion-content {
+  @apply hidden;
+}
+.acordion-content.open {
+  @apply block;
+}
+
+/* Transición de altura para acordeones (animación por clases, sin style.display) */
+.acordion-panel {
+  @apply transition-all duration-300 ease-in-out overflow-hidden;
+}
+.acordion-panel[data-open='true'] {
+  @apply max-h-[2000px] opacity-100;
+}
+.acordion-panel[data-open='false'] {
+  @apply max-h-0 opacity-0 margin-0 p-0-t p-0-b border-0-t;
+}

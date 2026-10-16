@@ -1,0 +1,20 @@
+{
+  "name": "cm-stilista",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Landing de CM Stilista — estilista independiente en Argentina, atención 1 a 1 con turno previo por WhatsApp",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "images:optimize": "node scripts/optimize-images.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "sharp": "^0.33.5",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.0"
+  }
+}
