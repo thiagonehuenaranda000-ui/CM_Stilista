@@ -1,0 +1,60 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        # BASE_PATH se ajusta automaticamente al repositorio:
+        #   usuario.github.io   -> "/"
+        #   usuario/nombre-repo -> "/nombre-repo/"
+        run: |
+          REPO_NAME="${{ github.repository }}"
+          REPO_NAME_LOWER=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')
+          USERNAME="${REPO_NAME_LOWER%%/*}"
+          REPO_SLUG="${REPO_NAME_LOWER#*/}"
+          if [ "$REPO_SLUG" = "${USERNAME}.github.io" ]; then
+            BASE_PATH="/"
+          else
+            BASE_PATH="/${REPO_SLUG}/"
+          fi
+          echo "BASE_PATH=$BASE_PATH"
+          BASE_PATH="$BASE_PATH" npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
