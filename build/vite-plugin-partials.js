@@ -5,16 +5,18 @@ import { pathToFileURL } from 'url'
 /**
  * vite-plugin-partials
  * ---------------------
- * Ensambla los parciales de sección en index.html y resuelve placeholders:
- *   <!-- @include "./src/sections/03-hero.html" -->  → contenido del archivo
- *   {{ wa('Hola Cintia! ...') }}                        → https://wa.me/...?text=...
- *   {{ year }}                                          → año actual (copyright dinámico)
- *   {{ siteUrl }}                                       → URL canónica del sitio
+ * 1. Ensambla los parciales de sección en index.html y resuelve placeholders:
+ *    <!-- @include "./src/sections/03-hero.html" -->
+ *    {{ wa('Hola Cintia! ...') }}   → https://wa.me/...?text=...
+ *    {{ year }}                     → año actual
+ *    {{ siteUrl }}                  → URL canónica del sitio
+ * 2. Emite robots.txt y sitemap.xml en dist/ resolviendo {{ siteUrl }} y {{ year }}.
  *
- * Funciona tanto en `vite dev` como en `vite build` (transformIndexHtml).
+ * Funciona tanto en `vite dev` como en `vite build`.
  */
 export default function partialsPlugin() {
   const root = process.cwd()
+  const distDir = path.join(root, 'dist')
 
   async function readConfig() {
     const configPath = path.join(root, 'src', 'config.js')
@@ -60,6 +62,27 @@ export default function partialsPlugin() {
       let result = processIncludes(html, 'index.html')
       result = processPlaceholders(result, config)
       return result
+    },
+
+    async writeBundle() {
+      const config = await readConfig()
+      const siteUrl = config.business.siteUrl.replace(/\/$/, '')
+      const year = String(config.business.copyrightYear)
+
+      // robots.txt
+      const robotsTpl = fs.readFileSync(path.join(root, 'src', 'robots.txt.tpl'), 'utf8')
+      const robots = robotsTpl
+        .replace(/\{\{\s*siteUrl\s*\}\}/g, siteUrl)
+      fs.writeFileSync(path.join(distDir, 'robots.txt'), robots)
+
+      // sitemap.xml
+      const sitemapTpl = fs.readFileSync(path.join(root, 'src', 'sitemap.xml.tpl'), 'utf8')
+      const sitemap = sitemapTpl
+        .replace(/\{\{\s*siteUrl\s*\}\}/g, siteUrl)
+        .replace(/\{\{\s*year\s*\}\}/g, year)
+      fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemap)
+
+      console.log('[vite-plugin-partials] robots.txt y sitemap.xml generados en dist/')
     }
   }
 }
