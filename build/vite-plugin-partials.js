@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { pathToFileURL } from 'url'
 
 /**
  * vite-plugin-partials
@@ -8,27 +9,17 @@ import path from 'path'
  *   <!-- @include "./src/sections/03-hero.html" -->  → contenido del archivo
  *   {{ wa('Hola Cintia! ...') }}                        → https://wa.me/...?text=...
  *   {{ year }}                                          → año actual (copyright dinámico)
+ *   {{ siteUrl }}                                       → URL canónica del sitio
  *
  * Funciona tanto en `vite dev` como en `vite build` (transformIndexHtml).
  */
 export default function partialsPlugin() {
   const root = process.cwd()
 
-  function readConfig() {
+  async function readConfig() {
     const configPath = path.join(root, 'src', 'config.js')
-    const source = fs.readFileSync(configPath, 'utf8')
-
-    // Extrae el objeto exportado como "export const config = { ... }"
-    const match = source.match(/export\s+const\s+config\s*=\s*(\{[\s\S]*\n?\})/)
-    if (!match) throw new Error('No se pudo parsear src/config.js')
-
-    // Usamos new Function en un contexto aislado para convertir el literal de
-    // objeto JS en un objeto real (sin ejecutar efectos secundarios).
-    /* eslint-disable no-new-func */
-    const config = new Function(`return ${match[1]};`)()
-    /* eslint-enable no-new-func */
-
-    return config
+    const mod = await import(pathToFileURL(configPath).href)
+    return mod.default || mod.config
   }
 
   function waLink(text, config) {
@@ -46,7 +37,6 @@ export default function partialsPlugin() {
         return match
       }
       let chunk = fs.readFileSync(absPath, 'utf8')
-      // Resuelve includes anidados recursivamente (por si acaso)
       chunk = processIncludes(chunk, absPath)
       return chunk
     })
@@ -54,13 +44,10 @@ export default function partialsPlugin() {
 
   function processPlaceholders(html, config) {
     return html
-      // {{ wa('texto con espacios') }}
       .replace(/\{\{\s*wa\(\s*['"]([^'"]*)['"]\s*\)\s*\}\}/g, (_, text) =>
         waLink(text, config)
       )
-      // {{ year }}
       .replace(/\{\{\s*year\s*\}\}/g, String(config.business.copyrightYear))
-      // {{ siteUrl }}
       .replace(/\{\{\s*siteUrl\s*\}\}/g, config.business.siteUrl)
   }
 
@@ -69,14 +56,9 @@ export default function partialsPlugin() {
     enforce: 'pre',
 
     async transformIndexHtml(html) {
-      const config = readConfig()
-
-      // 1. Includes de parciales (relativos a index.html, que está en la raíz)
+      const config = await readConfig()
       let result = processIncludes(html, 'index.html')
-
-      // 2. Placeholders de config y WhatsApp
       result = processPlaceholders(result, config)
-
       return result
     }
   }
