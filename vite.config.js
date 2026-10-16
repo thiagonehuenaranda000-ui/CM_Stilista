@@ -2,9 +2,9 @@ import { defineConfig } from 'vite'
 import partialsPlugin from './build/vite-plugin-partials.js'
 
 export default defineConfig({
-  // BASE_PATH se lee de la variable de entorno. Valor por defecto "/" para
-  // dominios propios o repos usuario.github.io. Para GitHub Pages en repo de
-  // proyecto usar, por ejemplo: BASE_PATH=/cm-stilista/
+  // BASE_PATH se lee de la variable de entorno o del flag --base de Vite.
+  // Valor por defecto "/" para dominios propios o repos usuario.github.io.
+  // Para GitHub Pages en repo de proyecto usar: BASE_PATH=/nombre-repo/
   base: process.env.BASE_PATH || '/',
 
   plugins: [partialsPlugin()],

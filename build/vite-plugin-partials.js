@@ -1,4 +1,5 @@
 import fs from 'fs'
+import fsp from 'fs/promises'
 import path from 'path'
 import { pathToFileURL } from 'url'
 
@@ -6,17 +7,23 @@ import { pathToFileURL } from 'url'
  * vite-plugin-partials
  * ---------------------
  * 1. Ensambla los parciales de sección en index.html y resuelve placeholders:
- *    <!-- @include "./src/sections/03-hero.html" -->
- *    {{ wa('Hola Cintia! ...') }}   → https://wa.me/...?text=...
+ *    {{ wa('...') }}   → https://wa.me/...?text=...
  *    {{ year }}                     → año actual
  *    {{ siteUrl }}                  → URL canónica del sitio
+ *    {{ base }}                     → base de Vite (ej: /cm-stilista/)
  * 2. Emite robots.txt y sitemap.xml en dist/ resolviendo {{ siteUrl }} y {{ year }}.
+ * 3. Cuando base != '/', copia los assets de public/ a dist/<base>/ para que
+ *    las rutas relativas de imágenes resuelvan correctamente en GitHub Pages.
  *
  * Funciona tanto en `vite dev` como en `vite build`.
  */
 export default function partialsPlugin() {
   const root = process.cwd()
   const distDir = path.join(root, 'dist')
+  const publicDir = path.join(root, 'public')
+
+  // Capturar el base resuelto por Vite (más confiable que process.env.BASE_PATH)
+  let resolvedBase = '/'
 
   async function readConfig() {
     const configPath = path.join(root, 'src', 'config.js')
@@ -44,23 +51,67 @@ export default function partialsPlugin() {
     })
   }
 
-  function processPlaceholders(html, config) {
+  function processPlaceholders(html, config, base) {
     return html
       .replace(/\{\{\s*wa\(\s*['"]([^'"]*)['"]\s*\)\s*\}\}/g, (_, text) =>
         waLink(text, config)
       )
       .replace(/\{\{\s*year\s*\}\}/g, String(config.business.copyrightYear))
       .replace(/\{\{\s*siteUrl\s*\}\}/g, config.business.siteUrl)
+      .replace(/\{\{\s*base\s*\}\}/g, base)
+  }
+
+  /**
+   * Copia public/ a dist/<base>/ para que los archivos estáticos resuelvan
+   * con el prefijo de base en GitHub Pages.
+   */
+  async function copyPublicAssets(base) {
+    const baseTrim = base.replace(/\/+$/, '')
+    if (!baseTrim || baseTrim === '/') return
+
+    const targetDir = path.join(distDir, baseTrim)
+    const entries = await fsp.readdir(publicDir, { withFileTypes: true })
+
+    for (const entry of entries) {
+      const src = path.join(publicDir, entry.name)
+      const dst = path.join(targetDir, entry.name)
+      if (entry.isDirectory()) {
+        await copyDirRecursive(src, dst)
+      } else {
+        await fsp.mkdir(targetDir, { recursive: true })
+        await fsp.cp(src, dst)
+      }
+    }
+    console.log(`[vite-plugin-partials] public/ copiado a dist/${baseTrim}/`)
+  }
+
+  async function copyDirRecursive(src, dst) {
+    await fsp.mkdir(dst, { recursive: true })
+    const entries = await fsp.readdir(src, { withFileTypes: true })
+    for (const entry of entries) {
+      const s = path.join(src, entry.name)
+      const d = path.join(dst, entry.name)
+      if (entry.isDirectory()) {
+        await copyDirRecursive(s, d)
+      } else {
+        await fsp.cp(s, d)
+      }
+    }
   }
 
   return {
     name: 'vite-plugin-partials',
     enforce: 'pre',
 
+    configResolved(config) {
+      resolvedBase = config.base || '/'
+    },
+
     async transformIndexHtml(html) {
       const config = await readConfig()
+      const base = resolvedBase
       let result = processIncludes(html, 'index.html')
-      result = processPlaceholders(result, config)
+      result = processPlaceholders(result, config, base)
       return result
     },
 
@@ -68,6 +119,7 @@ export default function partialsPlugin() {
       const config = await readConfig()
       const siteUrl = config.business.siteUrl.replace(/\/$/, '')
       const year = String(config.business.copyrightYear)
+      const base = resolvedBase
 
       // robots.txt
       const robotsTpl = fs.readFileSync(path.join(root, 'src', 'robots.txt.tpl'), 'utf8')
@@ -81,6 +133,11 @@ export default function partialsPlugin() {
         .replace(/\{\{\s*siteUrl\s*\}\}/g, siteUrl)
         .replace(/\{\{\s*year\s*\}\}/g, year)
       fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemap)
+
+      // Copiar public/ a dist/<base>/ cuando base != '/'
+      if (base && base !== '/') {
+        await copyPublicAssets(base)
+      }
 
       console.log('[vite-plugin-partials] robots.txt y sitemap.xml generados en dist/')
     }
