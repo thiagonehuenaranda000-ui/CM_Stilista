@@ -48,6 +48,14 @@ cm-stilista/
 
 ---
 
+## Antes de empezar (obligatorio)
+
+En tu repositorio de GitHub, ve a **Settings → Pages** y habilita GitHub Pages:
+- **Source:** GitHub Actions
+- Luego guarda.
+
+Sin este paso, el despliegue fallará con error 404.
+
 ## Primer despliegue (GitHub Pages)
 
 1. Crea el repositorio en GitHub (público o privado).
