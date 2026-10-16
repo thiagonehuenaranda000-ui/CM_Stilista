@@ -37,3 +37,6 @@ Thumbs.db
 .turbo/
 .coverage/
 .pnpm-store/
+
+# Imágenes optimizadas (se regeneran con npm run images:optimize)
+public/images/dimensions.json
